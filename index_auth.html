@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase Kullanıcı Girişi</title>
+    <!-- Tailwind CSS Yüklemesi -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter Fontu -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7fafc;
+        }
+        /* Custom CSS for a better mobile experience */
+        .card-container {
+            transition: transform 0.3s ease-in-out;
+        }
+        .btn {
+            transition: all 0.2s ease-in-out;
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+
+    <!-- Auth Formu Başlangıç -->
+    <div id="auth-container" class="w-full max-w-sm sm:max-w-md bg-white p-6 sm:p-8 shadow-2xl rounded-xl border border-gray-100 card-container">
+        
+        <h2 class="text-3xl font-extrabold text-gray-900 mb-6 text-center">
+            Kullanıcı Girişi / Kayıt
+        </h2>
+        
+        <div id="message-box" class="hidden p-3 mb-4 rounded-lg text-sm font-medium"></div>
+
+        <!-- E-posta Alanı -->
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-1" for="email">E-posta</label>
+            <input
+                id="email"
+                type="email"
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"
+                placeholder="ornek@mail.com"
+            />
+        </div>
+
+        <!-- Şifre Alanı -->
+        <div class="mb-6">
+            <label class="block text-sm font-medium text-gray-700 mb-1" for="password">Şifre (Min 6 Karakter)</label>
+            <input
+                id="password"
+                type="password"
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"
+                placeholder="******"
+            />
+        </div>
+
+        <!-- Butonlar -->
+        <div class="flex flex-col sm:flex-row justify-between space-y-3 sm:space-y-0 sm:space-x-4">
+            <button
+                id="signInBtn"
+                class="btn w-full sm:w-1/2 py-3 px-4 border border-transparent rounded-lg shadow-lg text-base font-semibold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transform hover:scale-[1.01]"
+            >
+                Giriş Yap
+            </button>
+            
+            <button
+                id="signUpBtn"
+                class="btn w-full sm:w-1/2 py-3 px-4 border border-transparent rounded-lg shadow-lg text-base font-semibold text-blue-600 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transform hover:scale-[1.01]"
+            >
+                Kayıt Ol
+            </button>
+        </div>
+        
+        <p class="mt-6 text-xs text-gray-500 text-center">
+            Bu dosya, Firebase Kimlik Doğrulama işlevini test etmek için tasarlanmıştır.
+        </p>
+
+    </div>
+    <!-- Auth Formu Bitiş -->
+
+    <!-- Firebase SDK Yüklemesi -->
+    <script type="module">
+        // Firebase Modüler SDK'larını import et
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-auth.js";
+
+        // ----------------------------------------------------------------------
+        // GEREKLİ: Kendi Firebase Yapılandırmanızı buraya yapıştırın.
+        // ----------------------------------------------------------------------
+        const firebaseConfig = {
+            apiKey: "AIzaSyBTugBuBVTWyzI9FpEPmm8vR4PFXyHoqWo", // Lütfen KENDİ anahtarınızı girin
+            authDomain: "araz-sosyal-uygulamasi-2025.firebaseapp.com",
+            projectId: "araz-sosyal-uygulamasi-2025",
+            storageBucket: "araz-sosyal-uygulamasi-2025.firebasestorage.app",
+            messagingSenderId: "31020798936",
+            appId: "1:31020798936:web:e7773fde56f6f3418498ad"
+        };
+        // ----------------------------------------------------------------------
+
+        // Firebase Uygulamasını Başlat
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        // DOM Elementlerini al
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const signInBtn = document.getElementById('signInBtn');
+        const signUpBtn = document.getElementById('signUpBtn');
+        const messageBox = document.getElementById('message-box');
+
+        // Kullanıcıya mesaj gösterme fonksiyonu (alert yerine)
+        const showMessage = (text, type = 'success') => {
+            messageBox.textContent = text;
+            messageBox.classList.remove('hidden', 'bg-green-100', 'text-green-800', 'bg-red-100', 'text-red-800');
+            
+            if (type === 'success') {
+                messageBox.classList.add('bg-green-100', 'text-green-800');
+            } else {
+                messageBox.classList.add('bg-red-100', 'text-red-800');
+            }
+        };
+
+        // Hata mesajlarını kullanıcı dostu hale getirme
+        const getErrorMessage = (errorCode) => {
+            switch (errorCode) {
+                case 'auth/invalid-email':
+                    return 'Geçersiz e-posta formatı.';
+                case 'auth/user-not-found':
+                    return 'Bu e-posta ile kayıtlı kullanıcı bulunamadı.';
+                case 'auth/wrong-password':
+                    return 'Hatalı şifre.';
+                case 'auth/email-already-in-use':
+                    return 'Bu e-posta adresi zaten kullanılıyor.';
+                case 'auth/weak-password':
+                    return 'Şifre en az 6 karakter olmalıdır.';
+                default:
+                    console.error("Firebase Hatası:", errorCode);
+                    return 'İşlem sırasında beklenmeyen bir hata oluştu.';
+            }
+        };
+
+        // ----------------------------------------------------------------------
+        // Kayıt Ol (Sign Up) İşlemi
+        // ----------------------------------------------------------------------
+        signUpBtn.addEventListener('click', async () => {
+            const email = emailInput.value;
+            const password = passwordInput.value;
+            
+            if (!email || !password) {
+                showMessage('Lütfen e-posta ve şifre alanlarını doldurun.', 'error');
+                return;
+            }
+
+            try {
+                await createUserWithEmailAndPassword(auth, email, password);
+                showMessage("Kayıt Başarılı! Artık giriş yapabilirsiniz.", 'success');
+            } catch (error) {
+                const message = getErrorMessage(error.code);
+                showMessage("Kayıt Hatası: " + message, 'error');
+            }
+        });
+
+        // ----------------------------------------------------------------------
+        // Giriş Yap (Sign In) İşlemi
+        // ----------------------------------------------------------------------
+        signInBtn.addEventListener('click', async () => {
+            const email = emailInput.value;
+            const password = passwordInput.value;
+            
+            if (!email || !password) {
+                showMessage('Lütfen e-posta ve şifre alanlarını doldurun.', 'error');
+                return;
+            }
+
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                showMessage("Giriş Başarılı! Uygulamaya yönlendiriliyorsunuz.", 'success');
+            } catch (error) {
+                const message = getErrorMessage(error.code);
+                showMessage("Giriş Hatası: " + message, 'error');
+            }
+        });
+        
+    </script>
+</body>
+</html>
