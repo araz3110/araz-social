@@ -1,1 +1,1 @@
-
+import { auth } from "./firebase";
