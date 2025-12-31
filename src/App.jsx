@@ -1,3 +1,4 @@
+// src/App.jsx
 import React, { useEffect, useState } from "react";
 import "./App.css";
 import Home from "./Home.jsx";
@@ -13,9 +14,11 @@ import {
 function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+
   const [mode, setMode] = useState("login"); // "login" | "register"
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -26,37 +29,66 @@ function App() {
     return () => unsub();
   }, []);
 
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+    } catch {
+      // sessiz geç
+    }
+  };
+
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
+
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-    } catch {
-      setError("Giriş yapılamadı. (Şimdilik test modunda devam edebilirsin.)");
+      await signInWithEmailAndPassword(auth, email.trim(), password);
+    } catch (err) {
+      const code = err?.code || "";
+      if (code === "auth/invalid-credential" || code === "auth/wrong-password") {
+        setError("E-posta veya şifre hatalı.");
+      } else if (code === "auth/user-not-found") {
+        setError("Bu e-posta ile kayıt bulunamadı.");
+      } else if (code === "auth/too-many-requests") {
+        setError("Çok fazla deneme yapıldı. Bir süre sonra tekrar deneyin.");
+      } else if (code === "auth/unauthorized-domain") {
+        setError(
+          "Bu domain Firebase tarafından yetkilendirilmemiş. (Firebase > Auth > Authorized domains kısmına vercel domainini ekleyin.)"
+        );
+      } else {
+        setError("Giriş yapılamadı. Lütfen tekrar deneyin.");
+      }
     }
   };
 
   const handleRegister = async (e) => {
     e.preventDefault();
     setError("");
+
     try {
-      await createUserWithEmailAndPassword(auth, email, password);
-    } catch {
-      setError("Kayıt yapılamadı. (Şimdilik test modunda devam edebilirsin.)");
+      await createUserWithEmailAndEmailAndPasswordSafe(auth, email.trim(), password);
+    } catch (err) {
+      const code = err?.code || "";
+      if (code === "auth/email-already-in-use") {
+        setError("Bu e-posta zaten kayıtlı. Giriş yapmayı deneyin.");
+      } else if (code === "auth/invalid-email") {
+        setError("Geçersiz e-posta adresi.");
+      } else if (code === "auth/weak-password") {
+        setError("Şifre çok zayıf. En az 6 karakter olmalı.");
+      } else if (code === "auth/unauthorized-domain") {
+        setError(
+          "Bu domain Firebase tarafından yetkilendirilmemiş. (Firebase > Auth > Authorized domains kısmına vercel domainini ekleyin.)"
+        );
+      } else {
+        setError("Kayıt yapılamadı. Lütfen tekrar deneyin.");
+      }
     }
   };
 
-  const handleLogout = () => {
-    signOut(auth);
-  };
-
-  // Firebase tam oturana kadar demo kullanıcı
-  const handleTestContinue = () => {
-    setUser({
-      email: "ornek@araz.app",
-      displayName: "ARAZ Deneme Kullanıcısı",
-      uid: "demo-user",
-    });
+  // Bazı ortamlarda yanlışlıkla createUserWithEmailAndPassword yerine farklı import sorunları olabiliyor.
+  // Bu küçük wrapper ile hatayı net yakalıyoruz.
+  const createUserWithEmailAndEmailAndPasswordSafe = async (authObj, em, pw) => {
+    return await createUserWithEmailAndPassword(authObj, em, pw);
   };
 
   if (loading) {
@@ -108,6 +140,7 @@ function App() {
               className="text-input"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
               required
             />
           </label>
@@ -120,6 +153,7 @@ function App() {
               minLength={6}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              autoComplete={mode === "login" ? "current-password" : "new-password"}
               required
             />
           </label>
@@ -131,17 +165,7 @@ function App() {
           </button>
         </form>
 
-        <button
-          type="button"
-          className="secondary-btn"
-          onClick={handleTestContinue}
-        >
-          Yapılandırma Olmadan Test Et
-        </button>
-
-        <p className="login-footer">
-          31 Aralık'ta ARAZ dünyası herkese açılıyor. ✨
-        </p>
+        <p className="login-footer">ARAZ dünyasına hoş geldin ✨</p>
       </div>
     </div>
   );
