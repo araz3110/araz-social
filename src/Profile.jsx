@@ -1,42 +1,60 @@
-import React, { useEffect, useState } from "react";
-import { auth } from "./firebase";
-import { updateProfile } from "firebase/auth";
+import React, { useState } from "react";
 
-export default function Profile({ user }) {
-  const [nickname, setNickname] = useState("");
-  const [saved, setSaved] = useState(false);
+export default function Profile({ user, nickname, setNickname, followCounts, setFollowCounts }) {
+  const [localNick, setLocalNick] = useState(nickname || "");
 
-  useEffect(() => {
-    const savedNick = localStorage.getItem("araz_nickname") || "";
-    setNickname(user?.displayName || savedNick || "");
-  }, [user]);
-
-  const save = async () => {
-    localStorage.setItem("araz_nickname", nickname);
-    try {
-      if (auth?.currentUser) await updateProfile(auth.currentUser, { displayName: nickname });
-    } catch {}
-    setSaved(true);
-    setTimeout(() => setSaved(false), 1200);
+  const saveNick = () => {
+    setNickname(localNick.trim());
   };
 
   return (
-    <div className="card">
-      <h2 className="card-title">Profilim</h2>
-      <div className="card-meta">{user?.email || "Misafir"}</div>
+    <div className="stack">
+      <div className="card">
+        <h2 className="card-title">Profil</h2>
+        <div className="meta">{user?.email || "Misafir"}</div>
 
-      <label className="field-label">
-        Nickname
+        <div className="stats">
+          <div className="stat">
+            <div className="stat-num">{followCounts.followers}</div>
+            <div className="stat-lbl">Takipçi</div>
+          </div>
+          <div className="stat">
+            <div className="stat-num">{followCounts.following}</div>
+            <div className="stat-lbl">Takip</div>
+          </div>
+        </div>
+
+        <label className="label">Nickname</label>
         <input
-          className="text-input"
-          value={nickname}
-          onChange={(e) => setNickname(e.target.value)}
+          className="input"
+          value={localNick}
+          onChange={(e) => setLocalNick(e.target.value)}
           placeholder="örn: Arazlı İdil"
         />
-      </label>
+        <button className="btn" onClick={saveNick} type="button">Kaydet</button>
 
-      <button className="primary-btn" onClick={save}>Kaydet</button>
-      {saved && <div className="login-footer">Kaydedildi ✅</div>}
+        <div className="hint">
+          Takip/Takipçi şu an demo sayaç (backend bağlayınca gerçek olacak).
+        </div>
+
+        {/* İstersen geçici test için sayaç artır/azalt */}
+        <div className="row">
+          <button
+            className="ghost-btn"
+            type="button"
+            onClick={() => setFollowCounts((p) => ({ ...p, followers: Math.max(0, p.followers - 1) }))}
+          >
+            - Takipçi
+          </button>
+          <button
+            className="ghost-btn"
+            type="button"
+            onClick={() => setFollowCounts((p) => ({ ...p, followers: p.followers + 1 }))}
+          >
+            + Takipçi
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
