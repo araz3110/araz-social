@@ -1,387 +1,380 @@
-/* GENEL RESET */
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
+/* =========================
+   ARAZ - App.css (FINAL PURPLE)
+   ========================= */
+
+:root{
+  --bg1:#05030b;         /* en koyu */
+  --bg2:#120826;         /* mor taban */
+  --glow1: rgba(135,70,255,.22);
+  --glow2: rgba(255,70,200,.12);
+
+  --glass: rgba(255,255,255,.07);
+  --glass2: rgba(255,255,255,.10);
+  --stroke: rgba(255,255,255,.12);
+
+  --text: rgba(255,255,255,.92);
+  --muted: rgba(255,255,255,.72);
+
+  --shadow: 0 18px 60px rgba(0,0,0,.55);
+  --radius: 18px;
 }
 
-html,
-body,
-#root {
-  margin: 0;
-  padding: 0;
-  height: 100%;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    sans-serif;
-  background: radial-gradient(circle at top, #281158 0%, #0b0516 45%, #120707 100%);
-  color: #f9f5ff;
-}
+*{ box-sizing:border-box; }
+html,body{ height:100%; }
 
-/* YÜKLENİYOR EKRANI */
+body{
+  margin:0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  color: var(--text);
 
-.loading-text {
-  color: #f5ecff;
-  font-size: 16px;
-}
-
-/* LOGIN EKRANI */
-
-.fullscreen-bg {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px 12px;
+  /* Purple theme */
   background:
-    radial-gradient(circle at top, rgba(173, 96, 255, 0.3), transparent 60%),
-    linear-gradient(180deg, #060313 0%, #130718 45%, #19080c 100%);
-  background-attachment: fixed;
+    radial-gradient(1100px 700px at 20% 10%, var(--glow1), transparent 55%),
+    radial-gradient(900px 600px at 85% 20%, var(--glow2), transparent 55%),
+    linear-gradient(180deg, var(--bg2), var(--bg1));
 }
 
-.login-card {
-  width: 100%;
-  max-width: 420px;
-  background: rgba(15, 10, 25, 0.92);
-  border-radius: 24px;
-  padding: 24px 20px 20px;
-  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  text-align: center;
+/* =========================
+   Shell + Layout
+   ========================= */
+.app-shell{
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
 }
 
-.login-logo {
-  width: 72px;
-  height: 72px;
-  border-radius: 18px;
+/* ============== TOP BAR (çakışma fix) ============== */
+.top-bar{
+  position: sticky;
+  top:0;
+  z-index: 80;
+
+  padding: 14px 14px 10px;
+  background: linear-gradient(180deg, rgba(18,8,38,.92), rgba(18,8,38,.62));
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid rgba(255,255,255,.06);
+
+  /* Çıkış + logo çakışmasın */
+  display:grid;
+  grid-template-columns: auto 1fr auto;
+  align-items:center;
+  gap:12px;
+}
+
+.brand{
+  display:grid;
+  grid-template-columns: auto 1fr;
+  align-items:center;
+  gap:12px;
+  min-width:0;
+}
+
+.brand-logo{
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
   object-fit: cover;
-  margin-bottom: 8px;
+  border: 1px solid rgba(255,255,255,.12);
+  box-shadow: 0 8px 20px rgba(0,0,0,.35);
 }
 
-.login-title {
-  margin: 0;
-  font-size: 28px;
-  letter-spacing: 0.12em;
-}
+.brand-text{ min-width:0; }
 
-.login-subtitle {
-  margin: 4px 0 16px;
-  font-size: 14px;
-  color: #ddd0ff;
-}
-
-.login-warning {
-  font-size: 12px;
-  text-align: left;
-  background: rgba(255, 215, 0, 0.08);
-  border: 1px solid rgba(255, 215, 0, 0.5);
-  border-radius: 12px;
-  padding: 8px 10px;
-  color: #ffeaa7;
-  margin-bottom: 16px;
-}
-
-/* Login toggle */
-
-.login-toggle {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
-.toggle-btn {
-  flex: 1;
-  padding: 8px 0;
-  border-radius: 999px;
-  border: 0;
-  font-size: 14px;
-  cursor: pointer;
-  background: rgba(255, 255, 255, 0.06);
-  color: #f3e9ff;
-}
-
-.toggle-btn.active {
-  background: linear-gradient(90deg, #ff6ad5, #9b5cff);
-  color: #ffffff;
-}
-
-/* Login form */
-
-.login-form {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-bottom: 12px;
-}
-
-.field-label {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
-  font-size: 13px;
-  color: #e4ddff;
-}
-
-.text-input {
-  width: 100%;
-  padding: 8px 10px;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  background: rgba(8, 4, 18, 0.85);
-  color: #f8f5ff;
-  font-size: 14px;
-}
-
-.text-input:focus {
-  outline: 2px solid #ff6ad5;
-  outline-offset: 1px;
-}
-
-.primary-btn {
-  width: 100%;
-  margin-top: 4px;
-  padding: 9px 0;
-  border-radius: 999px;
-  border: 0;
-  font-size: 15px;
-  font-weight: 600;
-  background: linear-gradient(90deg, #ff6ad5, #9b5cff);
-  color: #ffffff;
-  cursor: pointer;
-}
-
-.secondary-btn {
-  width: 100%;
-  margin-top: 4px;
-  padding: 9px 10px;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: transparent;
-  color: #f5edff;
-  font-size: 13px;
-  cursor: pointer;
-}
-
-.error-text {
-  width: 100%;
-  font-size: 12px;
-  color: #ffb4b4;
-  text-align: left;
-}
-
-.login-footer {
-  margin: 10px 0 0;
-  font-size: 12px;
-  color: #ccc1ff;
-}
-
-/* ANA UYGULAMA (HOME) */
-
-.app-shell {
-  min-height: 100vh;
-  padding: 16px 10px 28px;
-  background:
-    radial-gradient(circle at top, rgba(173, 96, 255, 0.35), transparent 55%),
-    linear-gradient(180deg, #12001f 0%, #3b1022 45%, #1b0705 100%);
-  color: #f7f0ff;
-}
-
-.top-bar {
-  max-width: 980px;
-  margin: 0 auto 12px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-}
-
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.brand-logo {
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-  object-fit: cover;
-}
-
-.brand-text h1 {
-  margin: 0;
+.brand-text h1{
+  margin:0;
   font-size: 22px;
-  letter-spacing: 0.18em;
+  letter-spacing:.5px;
+  line-height:1.05;
 }
 
-.brand-text p {
-  margin: 2px 0 0;
-  font-size: 12px;
-  color: #e0d2ff;
-}
-
-.ghost-button {
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  background: rgba(3, 0, 8, 0.3);
-  color: #f8f4ff;
-  padding: 6px 14px;
+.brand-text p{
+  margin:2px 0 0;
   font-size: 13px;
-  cursor: pointer;
+  color: var(--muted);
+  overflow:hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
 }
 
-/* Sekmeler */
-
-.nav-tabs {
-  max-width: 980px;
-  margin: 0 auto 14px;
-  display: flex;
-  gap: 8px;
-  background: rgba(5, 0, 10, 0.4);
-  padding: 4px;
-  border-radius: 999px;
-  overflow-x: auto;
+/* Çıkış butonu */
+.top-bar .ghost-button{
+  justify-self:end;
+  white-space:nowrap;
+  flex:0 0 auto;
+  padding: 10px 14px;
 }
 
-.nav-tab {
-  flex: 1;
-  border-radius: 999px;
-  border: 0;
-  padding: 8px 0;
-  background: transparent;
-  color: #f0e7ff;
+/* İçerik alanı */
+.content{
+  padding: 18px 14px 120px; /* alt menü için yer */
+}
+.page{
+  padding-bottom: 140px; /* alt menü + fab güvenli */
+}
+
+/* =========================
+   Bottom Nav (Sabit)
+   ========================= */
+.nav-tabs{
+  position: fixed;
+  left:0;
+  right:0;
+  bottom:0;
+  z-index: 70;
+  padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+  background: linear-gradient(180deg, rgba(10,6,18,.22), rgba(10,6,18,.92));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid rgba(255,255,255,.06);
+  display:flex;
+  gap:10px;
+  justify-content: space-between;
+}
+
+.nav-tab{
+  flex:1 1 auto;
+  padding: 12px 10px;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(255,255,255,.06);
+  color: rgba(255,255,255,.86);
+  font-weight: 800;
   font-size: 14px;
   cursor: pointer;
 }
 
-.nav-tab.active {
-  background: linear-gradient(90deg, #ff6ad5, #9b5cff);
-  box-shadow: 0 0 18px rgba(255, 106, 213, 0.4);
+.nav-tab.active{
+  background: rgba(255,255,255,.10);
+  border: 2px solid rgba(255,255,255,.70);
+  color:#fff;
 }
 
-/* İçerik */
+/* =========================
+   Buttons
+   ========================= */
+.primary-button{
+  border:none;
+  padding: 12px 14px;
+  border-radius: 16px;
+  cursor:pointer;
+  color:#fff;
+  font-weight: 900;
+  background: linear-gradient(90deg, rgba(145,70,255,.75), rgba(255,70,200,.30));
+  box-shadow: 0 10px 26px rgba(0,0,0,.35);
+}
+.primary-button:disabled{ opacity:.55; cursor:not-allowed; }
 
-.content {
-  max-width: 980px;
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
+.ghost-button{
+  padding: 10px 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.06);
+  color: rgba(255,255,255,.88);
+  cursor:pointer;
+}
+.ghost-button:disabled{ opacity:.6; cursor:not-allowed; }
+
+/* =========================
+   Cards
+   ========================= */
+.card, .profile-card{
+  border-radius: var(--radius);
+  background: var(--glass);
+  border: 1px solid var(--stroke);
+  box-shadow: var(--shadow);
+  padding: 14px;
 }
 
-.section-title {
-  margin: 0 0 4px;
+.card-title{
+  margin:0 0 6px;
   font-size: 18px;
+  font-weight: 900;
 }
-
-.section-subtitle {
-  margin: 0 0 12px;
-  font-size: 13px;
-  color: #e3d6ff;
-}
-
-/* Kartlar */
-
-.card {
-  background: linear-gradient(
-    145deg,
-    rgba(29, 12, 25, 0.96),
-    rgba(20, 8, 18, 0.96)
-  );
-  border-radius: 18px;
-  padding: 12px 14px;
-  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.55);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  margin-bottom: 6px;
-}
-
-.card-title {
-  margin: 0 0 6px;
-  font-size: 15px;
-}
-
-.card-meta {
-  margin: 0 0 8px;
-  font-size: 11px;
-  color: #d0c0ff;
-}
-
-.card-body {
-  margin: 0 0 8px;
-  font-size: 13px;
-}
-
-.card-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  font-size: 11px;
-}
-
-.tag {
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.06);
-}
-
-/* Profil kartı */
-
-.profile-card {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 10px;
-  padding: 12px 14px;
-  border-radius: 18px;
-  background: rgba(12, 5, 20, 0.95);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.profile-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 999px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #ff6ad5, #9b5cff);
-  font-weight: 700;
-}
-
-.profile-info {
-  display: flex;
-  flex-direction: column;
-}
-
-.profile-email {
-  margin: 0;
-  font-size: 14px;
-}
-
-.profile-role {
-  margin: 2px 0 0;
+.card-meta{
+  margin: 6px 0 0;
   font-size: 12px;
-  color: #d9cfff;
+  color: var(--muted);
+}
+.card-body{
+  margin: 8px 0 0;
+  color: rgba(255,255,255,.88);
+  line-height: 1.5;
+}
+.card-tags{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-top:10px;
+}
+.tag{
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.06);
 }
 
-/* EKRAN GENİŞLEYİNCE */
+/* Başlıklar */
+.section-title{
+  margin: 8px 0 6px;
+  font-size: 34px;
+  font-weight: 950;
+}
+.section-subtitle{
+  margin: 0 0 14px;
+  color: var(--muted);
+  line-height: 1.45;
+}
 
-@media (min-width: 768px) {
-  .app-shell {
-    padding: 20px 24px 32px;
-  }
+/* =========================
+   Profile avatar
+   ========================= */
+.profile-avatar{
+  background: radial-gradient(120px 80px at 30% 20%, rgba(145,70,255,.40), rgba(255,70,200,.14));
+  border: 1px solid rgba(255,255,255,.18);
+  box-shadow: 0 10px 26px rgba(0,0,0,.35);
+  color: white;
+}
 
-  .login-card {
-    padding: 28px 26px 22px;
-  }
+/* =========================
+   FAB (+) - Çıkış ile çakışmasın
+   ========================= */
+.fab{
+  position: fixed;
+  right: 16px;
+  bottom: calc(86px + env(safe-area-inset-bottom)); /* alt menünün üstü */
+  z-index: 90;
+  width: 58px;
+  height: 58px;
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 16px 40px rgba(0,0,0,.45);
+  color:#fff;
+  display:grid;
+  place-items:center;
+  cursor:pointer;
+}
+.fab-plus{
+  font-size: 30px;
+  font-weight: 900;
+  line-height: 1;
+}
 
-  .brand-logo {
-    width: 48px;
-    height: 48px;
-  }
+/* =========================
+   AUTH page (Auth.jsx)
+   ========================= */
+.auth-page{
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding: 18px 14px;
+}
 
-  .brand-text h1 {
-    font-size: 24px;
-  }
+.auth-card{
+  width:100%;
+  max-width:520px;
+  border-radius: 22px;
+  background: rgba(18,8,38,.72);
+  border: 1px solid rgba(255,255,255,.10);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  padding:16px;
+}
+
+.auth-header h1{
+  margin:0;
+  font-size:34px;
+  font-weight:950;
+}
+
+.auth-header p{
+  margin: 8px 0 0;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.auth-tabs{
+  display:flex;
+  gap:10px;
+  margin-top:14px;
+  padding:8px;
+  border-radius:18px;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.10);
+}
+
+.auth-tabs button{
+  flex:1;
+  padding:12px 10px;
+  border-radius:16px;
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(255,255,255,.06);
+  color: rgba(255,255,255,.86);
+  font-weight:900;
+  cursor:pointer;
+}
+
+.auth-tabs button.active{
+  border: 2px solid rgba(255,255,255,.70);
+  background: rgba(255,255,255,.10);
+  color:#fff;
+}
+
+.auth-error{
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(255,100,130,.28);
+  background: rgba(255,80,120,.12);
+}
+
+.auth-form{
+  margin-top:14px;
+  display:grid;
+  gap:10px;
+}
+
+.auth-form label{
+  font-size:13px;
+  color: rgba(255,255,255,.85);
+  font-weight:800;
+}
+
+.auth-form input{
+  width:100%;
+  padding: 14px 14px;
+  border-radius:16px;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.06);
+  color:#fff;
+  outline:none;
+}
+
+.auth-form input::placeholder{
+  color: rgba(255,255,255,.40);
+}
+
+.auth-submit{
+  margin-top:6px;
+  width:100%;
+  padding: 14px 14px;
+  border-radius:18px;
+  border:none;
+  cursor:pointer;
+  color:#fff;
+  font-weight:950;
+  background: linear-gradient(90deg, rgba(145,70,255,.78), rgba(255,70,200,.30));
+  box-shadow: 0 14px 34px rgba(0,0,0,.45);
+}
+
+.auth-foot{
+  margin-top:12px;
+  color: rgba(255,255,255,.75);
 }
