@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
-import Feed from "./pages/Feed.jsx";
-import Trade from "./pages/Trade.jsx";
-import Minds from "./pages/Minds.jsx";
-import Profile from "./pages/Profile.jsx";
+import Feed from "./Feed.jsx";
+import Trade from "./Trade.jsx";
+import Minds from "./Minds.jsx";
+import Profile from "./Profile.jsx";
 import logo from "./assets/logo.png";
 import "./home.css";
 
