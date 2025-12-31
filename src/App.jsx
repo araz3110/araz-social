@@ -1,4 +1,3 @@
-// src/App.jsx
 import React, { useEffect, useState } from "react";
 import "./App.css";
 import Home from "./Home.jsx";
@@ -11,7 +10,7 @@ import {
   signOut,
 } from "firebase/auth";
 
-function App() {
+export default function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -32,15 +31,12 @@ function App() {
   const handleLogout = async () => {
     try {
       await signOut(auth);
-    } catch {
-      // sessiz geç
-    }
+    } catch {}
   };
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
-
     try {
       await signInWithEmailAndPassword(auth, email.trim(), password);
     } catch (err) {
@@ -52,9 +48,7 @@ function App() {
       } else if (code === "auth/too-many-requests") {
         setError("Çok fazla deneme yapıldı. Bir süre sonra tekrar deneyin.");
       } else if (code === "auth/unauthorized-domain") {
-        setError(
-          "Bu domain Firebase tarafından yetkilendirilmemiş. (Firebase > Auth > Authorized domains kısmına vercel domainini ekleyin.)"
-        );
+        setError("Vercel domaini Firebase tarafından yetkilendirilmemiş (Auth > Authorized domains).");
       } else {
         setError("Giriş yapılamadı. Lütfen tekrar deneyin.");
       }
@@ -64,9 +58,8 @@ function App() {
   const handleRegister = async (e) => {
     e.preventDefault();
     setError("");
-
     try {
-      await createUserWithEmailAndEmailAndPasswordSafe(auth, email.trim(), password);
+      await createUserWithEmailAndPassword(auth, email.trim(), password);
     } catch (err) {
       const code = err?.code || "";
       if (code === "auth/email-already-in-use") {
@@ -76,19 +69,11 @@ function App() {
       } else if (code === "auth/weak-password") {
         setError("Şifre çok zayıf. En az 6 karakter olmalı.");
       } else if (code === "auth/unauthorized-domain") {
-        setError(
-          "Bu domain Firebase tarafından yetkilendirilmemiş. (Firebase > Auth > Authorized domains kısmına vercel domainini ekleyin.)"
-        );
+        setError("Vercel domaini Firebase tarafından yetkilendirilmemiş (Auth > Authorized domains).");
       } else {
         setError("Kayıt yapılamadı. Lütfen tekrar deneyin.");
       }
     }
-  };
-
-  // Bazı ortamlarda yanlışlıkla createUserWithEmailAndPassword yerine farklı import sorunları olabiliyor.
-  // Bu küçük wrapper ile hatayı net yakalıyoruz.
-  const createUserWithEmailAndEmailAndPasswordSafe = async (authObj, em, pw) => {
-    return await createUserWithEmailAndPassword(authObj, em, pw);
   };
 
   if (loading) {
@@ -170,5 +155,3 @@ function App() {
     </div>
   );
 }
-
-export default App;
