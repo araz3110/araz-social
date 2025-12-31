@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
-import logo from "./assets/logo.png";
-import "./App.css";
+import "./App.css"; // tek css kullan
+const logo = "/IMG-20251015-WA0007.png"; // public içindeki logonun adı buysa
 
 export default function Home({ user, onLogout }) {
   const [tab, setTab] = useState("feed"); // feed | trade | minds | profile
