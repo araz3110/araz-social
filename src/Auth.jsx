@@ -1,127 +1,224 @@
-import React, { useEffect, useState } from "react";
-import { auth } from "./firebase";
+import React, { useMemo, useState } from "react";
 import {
-  createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
-  onAuthStateChanged,
+  createUserWithEmailAndPassword,
+  updateProfile,
 } from "firebase/auth";
+import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { auth, db } from "./firebase"; // sende firebase.js / firebase.jsx ise yolu düzelt
+import "./App.css";
+import logo from "./assets/logo.png";
 
-export default function Auth({ onLogin }) {
-  const [mode, setMode] = useState("login"); // "login" | "register"
+export default function Auth({ onAuthed }) {
+  const [mode, setMode] = useState("login"); // login | register
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [pass, setPass] = useState("");
 
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [err, setErr] = useState("");
 
-  useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (user) => {
-      if (user && onLogin) onLogin(user);
-    });
-    return () => unsub();
-  }, [onLogin]);
+  // Kayıt sonrası profil tamamla
+  const [showProfile, setShowProfile] = useState(false);
+  const [fullName, setFullName] = useState("");
+  const [nickname, setNickname] = useState("");
 
-  const friendlyError = (code) => {
-    switch (code) {
-      case "auth/invalid-email":
-        return "Geçersiz e-posta adresi.";
-      case "auth/user-not-found":
-        return "Bu e-posta ile kayıt bulunamadı.";
-      case "auth/wrong-password":
-        return "Şifre hatalı.";
-      case "auth/email-already-in-use":
-        return "Bu e-posta zaten kayıtlı.";
-      case "auth/weak-password":
-        return "Şifre en az 6 karakter olmalı.";
-      case "auth/network-request-failed":
-        return "İnternet bağlantısı sorunu var gibi görünüyor.";
-      default:
-        return `Hata: ${code || "Bilinmeyen hata"}`;
-    }
+  const title = useMemo(
+    () => (mode === "login" ? "Giriş" : "Kayıt Ol"),
+    [mode]
+  );
+
+  const toggle = () => {
+    setErr("");
+    setMode((m) => (m === "login" ? "register" : "login"));
   };
 
-  const handleSubmit = async (e) => {
+  const normalizeNick = (v) =>
+    v
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, "")
+      .replace(/[^\w.]/g, "");
+
+  async function handleLogin(e) {
     e.preventDefault();
-    setError("");
-
-    if (!email || !password) {
-      setError("E-posta ve şifre boş olamaz.");
-      return;
-    }
-
+    setErr("");
     setLoading(true);
     try {
-      if (mode === "register") {
-        const cred = await createUserWithEmailAndPassword(auth, email, password);
-        if (onLogin) onLogin(cred.user);
-      } else {
-        const cred = await signInWithEmailAndPassword(auth, email, password);
-        if (onLogin) onLogin(cred.user);
-      }
-    } catch (err) {
-      setError(friendlyError(err?.code));
-      console.error("AUTH ERROR:", err);
+      const res = await signInWithEmailAndPassword(auth, email, pass);
+      onAuthed?.(res.user);
+    } catch (error) {
+      setErr(error?.message || "Giriş başarısız.");
     } finally {
       setLoading(false);
     }
-  };
+  }
+
+  async function handleRegister(e) {
+    e.preventDefault();
+    setErr("");
+    setLoading(true);
+    try {
+      const res = await createUserWithEmailAndPassword(auth, email, pass);
+
+      // Kayıt olur olmaz profil tamamlama ekranı aç
+      setShowProfile(true);
+
+      // Not: burada onAuthed çağırmıyoruz, önce isim/nick kaydedilecek
+    } catch (error) {
+      setErr(error?.message || "Kayıt başarısız.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function saveProfile() {
+    setErr("");
+    const n = normalizeNick(nickname);
+
+    if (!fullName.trim()) return setErr("İsim Soyisim yaz.");
+    if (!n) return setErr("Nickname yaz.");
+    if (n.length < 3) return setErr("Nickname en az 3 karakter olsun.");
+
+    const u = auth.currentUser;
+    if (!u) return setErr("Oturum bulunamadı. Tekrar giriş yap.");
+
+    setLoading(true);
+    try {
+      // Auth profile
+      await updateProfile(u, { displayName: fullName.trim() });
+
+      // Firestore user doc
+      await setDoc(
+        doc(db, "users", u.uid),
+        {
+          uid: u.uid,
+          email: u.email || "",
+          fullName: fullName.trim(),
+          nickname: n,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true }
+      );
+
+      setShowProfile(false);
+      onAuthed?.(u);
+    } catch (error) {
+      setErr(error?.message || "Kaydedilemedi. (Yetki / Firestore olabilir)");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
-    <div className="auth-page">
+    <div className="auth-wrap">
       <div className="auth-card">
-        <div className="auth-header">
-          <h1>ARAZ</h1>
-          <p>Zihin haritaları, takas ve paylaşım için sosyal platform.</p>
+        <img className="auth-logo" src={logo} alt="ARAZ" />
+
+        <div className="auth-title">ARAZ</div>
+        <div className="auth-sub">
+          Zihin haritaları, takas ve paylaşım için sosyal platform.
         </div>
 
         <div className="auth-tabs">
           <button
-            type="button"
-            className={mode === "login" ? "active" : ""}
+            className={`auth-tab ${mode === "login" ? "active" : ""}`}
             onClick={() => setMode("login")}
-            disabled={loading}
+            type="button"
           >
-            Giriş Yap
+            Giriş
           </button>
           <button
-            type="button"
-            className={mode === "register" ? "active" : ""}
+            className={`auth-tab ${mode === "register" ? "active" : ""}`}
             onClick={() => setMode("register")}
-            disabled={loading}
+            type="button"
           >
             Kayıt Ol
           </button>
         </div>
 
-        {error ? <div className="auth-error">{error}</div> : null}
-
-        <form onSubmit={handleSubmit} className="auth-form">
-          <label>E-posta</label>
+        <form onSubmit={mode === "login" ? handleLogin : handleRegister}>
+          <label className="field-label">E-posta</label>
           <input
+            className="field"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="ornek@mail.com"
+            type="email"
             autoComplete="email"
+            required
           />
 
-          <label>Şifre (en az 6 karakter)</label>
+          <label className="field-label">Şifre (en az 6 karakter)</label>
           <input
+            className="field"
+            value={pass}
+            onChange={(e) => setPass(e.target.value)}
+            placeholder="******"
             type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="••••••"
-            autoComplete={mode === "register" ? "new-password" : "current-password"}
+            autoComplete={mode === "login" ? "current-password" : "new-password"}
+            minLength={6}
+            required
           />
 
-          <button type="submit" disabled={loading} className="auth-submit">
-            {loading ? "Bekle..." : mode === "register" ? "Kayıt Ol" : "Giriş Yap"}
-          </button>
-        </form>
+          {err ? <div className="auth-error">{err}</div> : null}
 
-        <div className="auth-foot">
-          <small>31 Aralık’ta ARAZ dünyası herkese açılıyor. ✨</small>
-        </div>
+          <button className="primary-btn" disabled={loading} type="submit">
+            {loading ? "Bekle..." : mode === "login" ? "Giriş Yap" : "Kayıt Ol"}
+          </button>
+
+          <button className="ghost-btn" type="button" onClick={toggle}>
+            {mode === "login"
+              ? "Hesabın yok mu? Kayıt ol"
+              : "Zaten hesabın var mı? Giriş yap"}
+          </button>
+
+          <div className="auth-foot">
+            31 Aralık’ta ARAZ dünyası herkese açılıyor. ✨
+          </div>
+        </form>
       </div>
+
+      {/* Profil tamamla modal */}
+      {showProfile && (
+        <div className="modal-backdrop" role="dialog" aria-modal="true">
+          <div className="modal-card">
+            <div className="modal-title">Profilini tamamla</div>
+            <div className="modal-sub">
+              İnsanların seni bulabilmesi için isim + nickname gerekli.
+            </div>
+
+            <input
+              className="field"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              placeholder="İsim Soyisim"
+            />
+
+            <input
+              className="field"
+              value={nickname}
+              onChange={(e) => setNickname(e.target.value)}
+              placeholder="nickname (örn: idilturan)"
+            />
+
+            {err ? <div className="auth-error">{err}</div> : null}
+
+            <button className="primary-btn" onClick={saveProfile} disabled={loading}>
+              {loading ? "Kaydediliyor..." : "Kaydet"}
+            </button>
+
+            <button
+              className="ghost-btn"
+              type="button"
+              onClick={() => setShowProfile(false)}
+              disabled={loading}
+            >
+              Şimdi değil
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

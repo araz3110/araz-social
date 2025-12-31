@@ -1,28 +1,23 @@
 import React, { useEffect, useMemo, useState } from "react";
-import Feed from "./Feed.jsx";
-import Trade from "./Trade.jsx";
-import Minds from "./Minds.jsx";
-import Profile from "./Profile.jsx";
 import logo from "./assets/logo.png";
-import "./home.css";
+import "./App.css";
 
 export default function Home({ user, onLogout }) {
-  // Varsayılan: Akış
   const [tab, setTab] = useState("feed"); // feed | trade | minds | profile
 
-  // Tab'ı URL hash ile tut (paylaşınca aynı sayfaya açılır)
+  // Tab'ı URL hash ile tut
   useEffect(() => {
+    const valid = ["feed", "trade", "minds", "profile"];
     const fromHash = window.location.hash?.replace("#", "");
-    if (fromHash && ["feed", "trade", "minds", "profile"].includes(fromHash)) {
+    if (fromHash && valid.includes(fromHash)) {
       setTab(fromHash);
     } else {
       window.location.hash = "#feed";
       setTab("feed");
     }
-
     const onHash = () => {
       const h = window.location.hash?.replace("#", "");
-      if (h && ["feed", "trade", "minds", "profile"].includes(h)) setTab(h);
+      if (h && valid.includes(h)) setTab(h);
     };
     window.addEventListener("hashchange", onHash);
     return () => window.removeEventListener("hashchange", onHash);
@@ -40,6 +35,18 @@ export default function Home({ user, onLogout }) {
     window.location.hash = `#${next}`;
   };
 
+  const fabLabel = useMemo(() => {
+    if (tab === "feed") return "Gönderi";
+    if (tab === "trade") return "Takas";
+    if (tab === "minds") return "Zihin";
+    return "Düzenle";
+  }, [tab]);
+
+  const onFab = () => {
+    // Şimdilik sadece örnek. Sonra her tab'a özel açılır pencere ekleriz.
+    alert(`${fabLabel} ekle (sonra bunu form yapacağız)`);
+  };
+
   return (
     <div className="app-shell">
       <header className="topbar">
@@ -48,7 +55,7 @@ export default function Home({ user, onLogout }) {
           <div className="brand-text">
             <div className="brand-name">ARAZ</div>
             <div className="brand-sub">
-              Zihin haritaları, takas ve sosyal paylaşım
+              Zihin haritaları, takas ve sosyal paylaşım platformu.
             </div>
           </div>
         </div>
@@ -61,11 +68,16 @@ export default function Home({ user, onLogout }) {
       <main className="content">
         <h1 className="page-title">{title}</h1>
 
-        {tab === "feed" && <Feed user={user} />}
-        {tab === "trade" && <Trade user={user} />}
-        {tab === "minds" && <Minds user={user} />}
-        {tab === "profile" && <Profile user={user} />}
+        {tab === "feed" && <FeedView user={user} />}
+        {tab === "trade" && <TradeView user={user} />}
+        {tab === "minds" && <MindsView user={user} />}
+        {tab === "profile" && <ProfileView user={user} />}
       </main>
+
+      {/* + Butonu: altta sağda, nav ile çakışmaz */}
+      <button className="fab" onClick={onFab} aria-label="Ekle">
+        +
+      </button>
 
       <nav className="bottom-nav">
         <button
@@ -94,5 +106,86 @@ export default function Home({ user, onLogout }) {
         </button>
       </nav>
     </div>
+  );
+}
+
+/* =========================
+   Tek dosya içi sayfalar
+   (Şimdilik temel görünüm.
+   Eski kodlarını bunların içine gömeceğiz.)
+========================= */
+
+function FeedView({ user }) {
+  return (
+    <>
+      <div className="hint-card">
+        <div className="hint-title">Hoş geldin 👋</div>
+        <div className="hint-text">
+          + ile gönderi ekle. Karttaki <b>@nickname</b>’e dokunarak profili
+          açabilirsin.
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="muted">Henüz gönderi yok. + ile ilk gönderini ekleyebilirsin.</div>
+      </div>
+    </>
+  );
+}
+
+function TradeView({ user }) {
+  return (
+    <div className="card">
+      <div className="card-title">Takas</div>
+      <div className="muted">Takas ilanları burada görünecek.</div>
+    </div>
+  );
+}
+
+function MindsView({ user }) {
+  return (
+    <div className="card">
+      <div className="card-title">Zihin Haritalarım</div>
+      <div className="muted">Zihin haritaların burada görünecek.</div>
+    </div>
+  );
+}
+
+function ProfileView({ user }) {
+  return (
+    <>
+      <div className="profile-card">
+        <div className="profile-row">
+          <div className="avatar">A</div>
+          <div className="profile-meta">
+            <div className="profile-name">ARAZ</div>
+            <div className="profile-nick">@arazsocial</div>
+          </div>
+        </div>
+
+        <div className="profile-stats">
+          <div className="stat">
+            <div className="stat-num">0</div>
+            <div className="stat-label">Takipçi</div>
+          </div>
+          <div className="stat">
+            <div className="stat-num">0</div>
+            <div className="stat-label">Takip</div>
+          </div>
+          <div className="stat">
+            <div className="stat-num">0</div>
+            <div className="stat-label">İçerik</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="card-title">Premium plan yakında ✨</div>
+        <div className="muted">
+          ARAZ’da öne çıkan profiller ve özel alanlar açılacak. Şimdilik keşfet,
+          üret, paylaş.
+        </div>
+      </div>
+    </>
   );
 }
