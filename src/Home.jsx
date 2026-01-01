@@ -1,16 +1,31 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { addDoc, collection, onSnapshot, orderBy, query, serverTimestamp, doc, getDoc, setDoc } from "firebase/firestore";
+import logo from "./assets/logo.png";
+import "./home.css";
+
 import { db } from "./firebase";
-import "./App.css";
+import {
+  addDoc,
+  collection,
+  onSnapshot,
+  orderBy,
+  query,
+  serverTimestamp,
+} from "firebase/firestore";
+
+const ADMIN_EMAIL = "araznarut@gmail.com";
 
 export default function Home({ user, onLogout }) {
+  // TAB
   const [tab, setTab] = useState("feed"); // feed | trade | minds | profile
 
   useEffect(() => {
     const fromHash = window.location.hash?.replace("#", "");
-    if (fromHash && ["feed", "trade", "minds", "profile"].includes(fromHash)) setTab(fromHash);
-    else window.location.hash = "#feed";
-
+    if (fromHash && ["feed", "trade", "minds", "profile"].includes(fromHash)) {
+      setTab(fromHash);
+    } else {
+      window.location.hash = "#feed";
+      setTab("feed");
+    }
     const onHash = () => {
       const h = window.location.hash?.replace("#", "");
       if (h && ["feed", "trade", "minds", "profile"].includes(h)) setTab(h);
@@ -19,10 +34,12 @@ export default function Home({ user, onLogout }) {
     return () => window.removeEventListener("hashchange", onHash);
   }, []);
 
+  const isAdmin = (user?.email || "").toLowerCase() === ADMIN_EMAIL.toLowerCase();
+
   const title = useMemo(() => {
     if (tab === "feed") return "Akış";
     if (tab === "trade") return "Takas";
-    if (tab === "minds") return "Zihin Haritalarım";
+    if (tab === "minds") return "Zihinlerimin";
     return "Profilim";
   }, [tab]);
 
@@ -31,190 +48,286 @@ export default function Home({ user, onLogout }) {
     window.location.hash = `#${next}`;
   };
 
-  // public klasöründeki görseli kullan (import hatası olmasın)
-  const logoUrl = "/IMG-20251015-WA00007.png"; // sende public içinde bu vardı
+  // DATA
+  const [feedItems, setFeedItems] = useState([]);
+  const [tradeItems, setTradeItems] = useState([]);
+  const [mindItems, setMindItems] = useState([]);
 
+  useEffect(() => {
+    const qFeed = query(collection(db, "feed"), orderBy("createdAt", "desc"));
+    const qTrade = query(collection(db, "trade"), orderBy("createdAt", "desc"));
+    const qMinds = query(collection(db, "minds"), orderBy("createdAt", "desc"));
+
+    const unsub1 = onSnapshot(qFeed, (snap) => {
+      setFeedItems(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+    });
+    const unsub2 = onSnapshot(qTrade, (snap) => {
+      setTradeItems(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+    });
+    const unsub3 = onSnapshot(qMinds, (snap) => {
+      setMindItems(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+    });
+
+    return () => {
+      unsub1();
+      unsub2();
+      unsub3();
+    };
+  }, []);
+
+  // MODAL (prompt yerine)
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalType, setModalType] = useState("feed"); // feed | trade | minds
+  const [text, setText] = useState("");
+  const [mindTitle, setMindTitle] = useState("");
+  const [anonymous, setAnonymous] = useState(false);
+
+  const openComposer = (type) => {
+    setModalType(type);
+    setText("");
+    setMindTitle("");
+    setAnonymous(false);
+    setModalOpen(true);
+  };
+
+  const closeComposer = () => setModalOpen(false);
+
+  const submitComposer = async () => {
+    try {
+      if (!user?.uid) return;
+
+      if (modalType === "feed") {
+        if (!text.trim()) return;
+        await addDoc(collection(db, "feed"), {
+          text: text.trim(),
+          uid: user.uid,
+          email: user.email || "",
+          createdAt: serverTimestamp(),
+        });
+      }
+
+      if (modalType === "trade") {
+        if (!text.trim()) return;
+        await addDoc(collection(db, "trade"), {
+          text: text.trim(),
+          uid: user.uid,
+          email: user.email || "",
+          createdAt: serverTimestamp(),
+        });
+      }
+
+      if (modalType === "minds") {
+        if (!mindTitle.trim()) return;
+        await addDoc(collection(db, "minds"), {
+          title: mindTitle.trim(),
+          content: text.trim(),
+          anonymous: !!anonymous,
+          uid: user.uid, // ✅ admin için her zaman kayıtlı
+          email: user.email || "",
+          createdAt: serverTimestamp(),
+        });
+      }
+
+      closeComposer();
+    } catch (e) {
+      console.error(e);
+      alert("Kayıt sırasında hata oldu. (Console'a yazdım)");
+    }
+  };
+
+  // UI
   return (
     <div className="app-shell">
       <header className="topbar">
         <div className="brand">
-          <img className="brand-logo" src={logoUrl} alt="ARAZ" />
+          <img className="brand-logo" src={logo} alt="ARAZ" />
           <div className="brand-text">
             <div className="brand-name">ARAZ</div>
             <div className="brand-sub">Zihin haritaları, takas ve sosyal paylaşım</div>
           </div>
         </div>
-        <button className="logout-btn" onClick={onLogout}>Çıkış</button>
+
+        <button className="logout-btn" onClick={onLogout}>
+          Çıkış
+        </button>
       </header>
 
       <main className="content">
         <div className="page-head">
           <h1 className="page-title">{title}</h1>
-          {tab === "feed" && <PlusBtn onClick={() => FeedAdd(user)} />}
-          {tab === "trade" && <PlusBtn onClick={() => TradeAdd(user)} />}
-          {tab === "minds" && <PlusBtn onClick={() => MindsAdd(user)} />}
-          {tab === "profile" && null}
+          {(tab === "feed" || tab === "trade" || tab === "minds") && (
+            <button
+              className="fab"
+              onClick={() => openComposer(tab === "feed" ? "feed" : tab === "trade" ? "trade" : "minds")}
+              aria-label="Ekle"
+              title="Ekle"
+            >
+              +
+            </button>
+          )}
         </div>
 
-        {tab === "feed" && <Feed user={user} />}
-        {tab === "trade" && <Trade user={user} />}
-        {tab === "minds" && <Minds user={user} />}
-        {tab === "profile" && <Profile user={user} />}
+        {/* FEED */}
+        {tab === "feed" && (
+          <div className="card">
+            {feedItems.length === 0 ? (
+              <div className="muted">Henüz paylaşım yok.</div>
+            ) : (
+              <div className="list">
+                {feedItems.map((it) => (
+                  <div key={it.id} className="list-item">
+                    <div className="list-text">{it.text}</div>
+                    <div className="list-meta">
+                      {isAdmin ? `UID: ${it.uid}` : ""}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TRADE */}
+        {tab === "trade" && (
+          <div className="card">
+            {tradeItems.length === 0 ? (
+              <div className="muted">Henüz takas yok.</div>
+            ) : (
+              <div className="list">
+                {tradeItems.map((it) => (
+                  <div key={it.id} className="list-item">
+                    <div className="list-text">{it.text}</div>
+                    <div className="list-meta">{isAdmin ? `UID: ${it.uid}` : ""}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* MINDS */}
+        {tab === "minds" && (
+          <div className="card">
+            <div className="muted">
+              ✅ Anonim seçilse bile sen (admin) UID’den görebilirsin.
+            </div>
+
+            <div style={{ height: 12 }} />
+
+            {mindItems.length === 0 ? (
+              <div className="muted">Henüz düşünme haritası yok.</div>
+            ) : (
+              <div className="list">
+                {mindItems.map((it) => {
+                  const showOwner = isAdmin || !it.anonymous;
+                  const ownerLabel = it.anonymous ? "Anonim" : "Kullanıcı";
+                  return (
+                    <div key={it.id} className="list-item">
+                      <div className="list-title">{it.title}</div>
+                      {it.content ? <div className="list-text">{it.content}</div> : null}
+                      <div className="list-meta">
+                        {showOwner ? `${ownerLabel}${isAdmin ? ` • UID: ${it.uid}` : ""}` : "Anonim"}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* PROFILE */}
+        {tab === "profile" && (
+          <div className="card">
+            <div className="profile-name">{(user?.displayName || "Arazsocial").trim()}</div>
+            <div className="muted">{user?.email || ""}</div>
+
+            <div className="profile-stats">
+              <div className="stat">
+                <div className="stat-num">0</div>
+                <div className="stat-label">Takipçi</div>
+              </div>
+              <div className="stat">
+                <div className="stat-num">0</div>
+                <div className="stat-label">Takip</div>
+              </div>
+            </div>
+
+            <div className="muted">
+              Takip/arama özelliğini bir sonraki adımda ekleyeceğiz.
+            </div>
+          </div>
+        )}
       </main>
 
       <nav className="bottom-nav">
-        <button className={`nav-btn ${tab === "feed" ? "active" : ""}`} onClick={() => go("feed")}>Akış</button>
-        <button className={`nav-btn ${tab === "trade" ? "active" : ""}`} onClick={() => go("trade")}>Takas</button>
-        <button className={`nav-btn ${tab === "minds" ? "active" : ""}`} onClick={() => go("minds")}>Zihinlerim</button>
-        <button className={`nav-btn ${tab === "profile" ? "active" : ""}`} onClick={() => go("profile")}>Profilim</button>
+        <button className={`nav-btn ${tab === "feed" ? "active" : ""}`} onClick={() => go("feed")}>
+          Akış
+        </button>
+        <button className={`nav-btn ${tab === "trade" ? "active" : ""}`} onClick={() => go("trade")}>
+          Takas
+        </button>
+        <button className={`nav-btn ${tab === "minds" ? "active" : ""}`} onClick={() => go("minds")}>
+          Benimlerim
+        </button>
+        <button className={`nav-btn ${tab === "profile" ? "active" : ""}`} onClick={() => go("profile")}>
+          Profilim
+        </button>
       </nav>
-    </div>
-  );
-}
 
-function PlusBtn({ onClick }) {
-  return <button className="plus-btn" onClick={onClick}>+</button>;
-}
+      {/* MODAL */}
+      {modalOpen && (
+        <div className="modal-backdrop" onClick={closeComposer}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-title">
+              {modalType === "feed" && "Akışa ne paylaşmak istiyorsun?"}
+              {modalType === "trade" && "Takas metnin ne?"}
+              {modalType === "minds" && "Zihin haritası ekle"}
+            </div>
 
-/** ===== Akış ===== */
-function Feed({ user }) {
-  const [items, setItems] = useState([]);
-  useEffect(() => {
-    const q = query(collection(db, "feedPosts"), orderBy("createdAt", "desc"));
-    return onSnapshot(q, (snap) => setItems(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
-  }, []);
-  return (
-    <div className="card">
-      {items.length === 0 ? <div className="muted">Henüz paylaşım yok.</div> : null}
-      {items.map(x => (
-        <div key={x.id} className="row">
-          <div className="row-title">{x.text}</div>
-          <div className="row-sub">{x.authorNickname || "Kullanıcı"}</div>
-        </div>
-      ))}
-    </div>
-  );
-}
+            {modalType === "minds" && (
+              <>
+                <label className="field-label">Başlık</label>
+                <input
+                  className="field"
+                  value={mindTitle}
+                  onChange={(e) => setMindTitle(e.target.value)}
+                  placeholder="Örn: Para biriktirme planı"
+                />
 
-async function FeedAdd(user) {
-  const text = prompt("Akışa ne paylaşmak istiyorsun?");
-  if (!text?.trim()) return;
-  const nick = await getNickname(user.uid);
-  await addDoc(collection(db, "feedPosts"), {
-    text: text.trim(),
-    authorUid: user.uid,
-    authorNickname: nick,
-    createdAt: serverTimestamp(),
-  });
-}
+                <div className="row">
+                  <label className="check">
+                    <input
+                      type="checkbox"
+                      checked={anonymous}
+                      onChange={(e) => setAnonymous(e.target.checked)}
+                    />
+                    <span>Anonim paylaş</span>
+                  </label>
+                  <div className="muted small">
+                    (Admin sen: UID’yi görürsün)
+                  </div>
+                </div>
+              </>
+            )}
 
-/** ===== Takas ===== */
-function Trade({ user }) {
-  const [items, setItems] = useState([]);
-  useEffect(() => {
-    const q = query(collection(db, "trades"), orderBy("createdAt", "desc"));
-    return onSnapshot(q, (snap) => setItems(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
-  }, []);
-  return (
-    <div className="card">
-      {items.length === 0 ? <div className="muted">Henüz takas yok.</div> : null}
-      {items.map(x => (
-        <div key={x.id} className="row">
-          <div className="row-title">{x.offer} ⇄ {x.want}</div>
-          <div className="row-sub">{x.authorNickname || "Kullanıcı"}</div>
-        </div>
-      ))}
-    </div>
-  );
-}
+            <label className="field-label">
+              {modalType === "minds" ? "Açıklama" : "Metin"}
+            </label>
+            <textarea
+              className="field area"
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              placeholder={modalType === "feed" ? "Bugün ARAZ için..." : modalType === "trade" ? "Excel öğrenmek istiyorum, karşılığında..." : "Detaylar..."}
+            />
 
-async function TradeAdd(user) {
-  const offer = prompt("Sen ne veriyorsun? (ör: Excel pratiği)");
-  if (!offer?.trim()) return;
-  const want = prompt("Karşılığında ne istiyorsun? (ör: haftada 1 gün İngilizce konuşma)");
-  if (!want?.trim()) return;
-  const nick = await getNickname(user.uid);
-  await addDoc(collection(db, "trades"), {
-    offer: offer.trim(),
-    want: want.trim(),
-    authorUid: user.uid,
-    authorNickname: nick,
-    createdAt: serverTimestamp(),
-  });
-}
-
-/** ===== Zihin Haritalarım ===== */
-function Minds({ user }) {
-  const [items, setItems] = useState([]);
-  useEffect(() => {
-    const q = query(collection(db, "mindmaps"), orderBy("createdAt", "desc"));
-    return onSnapshot(q, (snap) => setItems(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
-  }, []);
-  return (
-    <div className="card">
-      <div className="muted">Anonim seçilse bile sen (admin) UID’den görebilirsin.</div>
-      {items.length === 0 ? <div className="muted" style={{ marginTop: 10 }}>Henüz zihin haritası yok.</div> : null}
-      {items.map(x => (
-        <div key={x.id} className="row">
-          <div className="row-title">{x.title}</div>
-          <div className="row-sub">
-            {x.anonymous ? "Anonim" : (x.authorNickname || "Kullanıcı")}
+            <div className="modal-actions">
+              <button className="btn ghost" onClick={closeComposer}>İptal</button>
+              <button className="btn" onClick={submitComposer}>Tamam</button>
+            </div>
           </div>
         </div>
-      ))}
+      )}
     </div>
   );
-}
-
-async function MindsAdd(user) {
-  const title = prompt("Zihin haritası başlığı?");
-  if (!title?.trim()) return;
-  const content = prompt("İçerik (kısa not) yaz:");
-  if (!content?.trim()) return;
-
-  const anonymous = confirm("Anonim olarak gönderilsin mi?");
-  const nick = await getNickname(user.uid);
-
-  await addDoc(collection(db, "mindmaps"), {
-    title: title.trim(),
-    content: content.trim(),
-    anonymous,
-    authorUid: user.uid,          // admin görür
-    authorNickname: anonymous ? "Anonim" : nick, // profilde anonim
-    createdAt: serverTimestamp(),
-  });
-}
-
-/** ===== Profil ===== */
-function Profile({ user }) {
-  const [me, setMe] = useState(null);
-
-  useEffect(() => {
-    (async () => {
-      const snap = await getDoc(doc(db, "users", user.uid));
-      setMe(snap.exists() ? snap.data() : null);
-    })();
-  }, [user.uid]);
-
-  return (
-    <div className="card">
-      <div className="row">
-        <div className="row-title">{me?.nickname || "Profil"}</div>
-        <div className="row-sub">{me?.name ? `${me.name} ${me.surname}` : user.email}</div>
-      </div>
-
-      <div className="stats">
-        <div className="stat"><div className="num">{me?.followersCount ?? 0}</div><div className="lbl">Takipçi</div></div>
-        <div className="stat"><div className="num">{me?.followingCount ?? 0}</div><div className="lbl">Takip</div></div>
-      </div>
-
-      <div className="muted">Takip/arama özelliğini bir sonraki adımda netleştirip ekleyeceğiz.</div>
-    </div>
-  );
-}
-
-async function getNickname(uid) {
-  const snap = await getDoc(doc(db, "users", uid));
-  if (snap.exists() && snap.data()?.nickname) return snap.data().nickname;
-  return "Kullanıcı";
 }
